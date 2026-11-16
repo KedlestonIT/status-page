@@ -229,6 +229,67 @@ async function m365() {
   }];
 }
 
+// ---------- Trelson (Atlassian Statuspage) ----------
+const TRELSON_PAGE = 'https://trelson.statuspage.io';
+
+function statuspageLevel(s) {
+  switch (s) {
+    case 'operational': return 'operational';
+    case 'under_maintenance': return 'maintenance';
+    case 'degraded_performance': return 'degraded';
+    case 'partial_outage': return 'partial';
+    case 'major_outage': return 'outage';
+    default: return 'unknown';
+  }
+}
+const impactLevel = (i) => ({ none: 'degraded', minor: 'degraded', major: 'partial', critical: 'outage' }[i] || 'degraded');
+
+async function trelson() {
+  const data = await get(`${TRELSON_PAGE}/api/v2/summary.json`, 'json');
+  const components = data.components
+    .filter((c) => !c.group)
+    .map((c) => ({ id: c.id, name: c.name, status: statuspageLevel(c.status), statusText: LABEL[statuspageLevel(c.status)] }));
+
+  const toIncident = (i, kind) => {
+    const last = (i.incident_updates || [])[0] || {};
+    return {
+      kind,
+      title: i.name,
+      status: kind === 'maintenance' ? 'maintenance' : impactLevel(i.impact),
+      started: i.started_at || i.scheduled_for || i.created_at,
+      ends: i.scheduled_until,
+      updated: last.updated_at || i.updated_at,
+      message: decode(last.body || ''),
+      url: i.shortlink || TRELSON_PAGE,
+    };
+  };
+  const maint = data.scheduled_maintenances || [];
+  const active = [
+    ...(data.incidents || []).map((i) => toIncident(i, 'incident')),
+    ...maint.filter((m) => m.status === 'in_progress' || m.status === 'verifying').map((m) => toIncident(m, 'maintenance')),
+  ];
+  const upcoming = maint.filter((m) => m.status === 'scheduled').map((m) => toIncident(m, 'maintenance'));
+
+  // Headline follows the exam tool (Assessment); Class Manager is listed underneath.
+  const exams = components.find((c) => /assessment/i.test(c.name));
+  let status = exams ? exams.status : worst(components.map((c) => c.status));
+  if (data.incidents?.length) status = worst([status, 'degraded']);
+
+  return [{
+    id: 'trelson',
+    name: 'Trelson Exams',
+    vendor: 'Trelson',
+    status,
+    statusText: LABEL[status],
+    scope: null,
+    components: components.map(({ id, ...c }) => c),
+    incidents: active,
+    upcoming,
+    url: TRELSON_PAGE,
+    updated: data.page?.updated_at || null,
+  }];
+}
+
 function unavailable(id, name, vendor, url, error) {
   return {
     id, name, vendor, url,
@@ -244,6 +305,7 @@ const SOURCES = [
   { fn: m365, fallback: [['m365', 'Microsoft 365', 'Microsoft', M365_PAGE]] },
   { fn: securly, fallback: SECURLY_PRODUCTS.map((p) => [p.id, p.name, 'Securly', SECURLY_PAGE]) },
   { fn: arbor, fallback: [['arbor-mis', 'Arbor MIS', 'Arbor Education', ARBOR_PAGE]] },
+  { fn: trelson, fallback: [['trelson', 'Trelson Exams', 'Trelson', TRELSON_PAGE]] },
 ];
 
 async function collect() {

@@ -1,6 +1,6 @@
 # IT Service Status page
 
-A public status page for Microsoft 365, Securly Filter, Securly Classroom, Securly Aware and Arbor MIS.
+A public status page for Microsoft 365, Securly Filter, Securly Classroom, Securly Aware, Arbor MIS and Trelson Exams.
 It reads each supplier's own status page, so there are no emails to parse and nothing to update by hand.
 
 Hosted free on **GitHub Pages**. A scheduled **GitHub Actions** workflow collects the supplier status about
@@ -21,6 +21,7 @@ dev-server.js                   local preview
 | Securly Filter | Status.io API for status.securly.com | Uses the **UK** region status. |
 | Securly Classroom / Aware | Same Status.io API | An active incident lifts the card to at least "Degraded". |
 | Arbor MIS | Reads status.arbor-education.com (Statuspal) | Headline = worst of School MIS / MAT MIS; all Arbor services listed underneath. |
+| Trelson Exams | trelson.statuspage.io API (Atlassian Statuspage) | Headline = Assessment (exam lockdown); Class Manager listed underneath. |
 
 If a supplier can't be reached, that card shows "Status unavailable" with a link to the supplier's page,
 and the workflow run shows a warning. If the page hasn't been updated for 30 minutes it says so.
