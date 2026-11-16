@@ -1,6 +1,6 @@
 # IT Service Status page
 
-A public status page for Microsoft 365, Securly Filter, Securly Classroom, Securly Aware, Arbor MIS and Trelson Exams.
+A public status page for Microsoft 365, Securly Filter, Securly Classroom, Securly Aware, Arbor MIS, Trelson Exams, SAMpeople and EVOLVE Visits.
 It reads each supplier's own status page, so there are no emails to parse and nothing to update by hand.
 
 Hosted free on **GitHub Pages**. A scheduled **GitHub Actions** workflow collects the supplier status about
@@ -22,6 +22,11 @@ dev-server.js                   local preview
 | Securly Classroom / Aware | Same Status.io API | An active incident lifts the card to at least "Degraded". |
 | Arbor MIS | Reads status.arbor-education.com (Statuspal) | Headline = worst of School MIS / MAT MIS; all Arbor services listed underneath. |
 | Trelson Exams | trelson.statuspage.io API (Atlassian Statuspage) | Headline = Assessment (exam lockdown); Class Manager listed underneath. |
+| SAMpeople | **Our own availability check** of app.sampeople.co.uk and MySAM staff absence | No supplier status page exists. Down = no response or a server error on two attempts; slow = over 8 s. |
+| EVOLVE Visits | **Our own availability check** of evolve.edufocus.co.uk | No supplier status page exists (eduFOCUS has an unconfigured Statuspage). Same rules as above. |
+
+Availability checks only prove the login page loads. They can't see problems behind sign-in, and the checks run from
+GitHub's servers (not in school), so a school-only network issue won't show.
 
 If a supplier can't be reached, that card shows "Status unavailable" with a link to the supplier's page,
 and the workflow run shows a warning. If the page hasn't been updated for 30 minutes it says so.

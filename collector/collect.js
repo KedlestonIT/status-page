@@ -290,6 +290,77 @@ async function trelson() {
   }];
 }
 
+// ---------- Availability checks (suppliers with no status page) ----------
+// We load each app's login page ourselves. Down = no response or a 5xx on two attempts.
+const SLOW_MS = 8000;
+const CHECKED = [
+  {
+    id: 'sampeople', name: 'SAMpeople', vendor: 'SAMpeople (Arbor)', url: 'https://app.sampeople.co.uk/',
+    checks: [
+      { name: 'SAMpeople app & sign-in', url: 'https://app.sampeople.co.uk/' },
+      { name: 'Staff absence (MySAM)', url: 'https://mysam.staffabsencemanagement.co.uk/Account/AppLogin' },
+    ],
+  },
+  {
+    id: 'evolve', name: 'EVOLVE Visits', vendor: 'eduFOCUS', url: 'https://evolve.edufocus.co.uk/',
+    checks: [{ name: 'EVOLVE', url: 'https://evolve.edufocus.co.uk/' }],
+  },
+];
+
+async function probe(url) {
+  const t0 = Date.now();
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'status-page-collector/1.0' },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(15000),
+    });
+    await res.arrayBuffer().catch(() => {});
+    return { ok: res.status < 500, code: res.status, ms: Date.now() - t0 };
+  } catch (err) {
+    return { ok: false, code: null, ms: Date.now() - t0, error: err.name === 'TimeoutError' ? 'timed out' : err.message };
+  }
+}
+
+async function check({ name, url }) {
+  let r = await probe(url);
+  if (!r.ok) r = await probe(url); // retry once before calling it down
+  const secs = (r.ms / 1000).toFixed(1);
+  if (!r.ok) {
+    return { name, status: 'outage', statusText: r.code ? `Error ${r.code}` : `Not responding (${r.error})` };
+  }
+  if (r.ms > SLOW_MS) return { name, status: 'degraded', statusText: `Slow (${secs}s)` };
+  return { name, status: 'operational', statusText: `Responding (${secs}s)` };
+}
+
+async function availability() {
+  return Promise.all(CHECKED.map(async (svc) => {
+    const components = await Promise.all(svc.checks.map(check));
+    const status = worst(components.map((c) => c.status));
+    const down = components.filter((c) => c.status !== 'operational');
+    return {
+      id: svc.id,
+      name: svc.name,
+      vendor: svc.vendor,
+      status,
+      statusText: LABEL[status],
+      scope: 'Our availability check (no supplier status page)',
+      components,
+      incidents: down.map((c) => ({
+        kind: 'incident',
+        title: `${c.name}: ${c.statusText}`,
+        status: c.status,
+        updated: new Date().toISOString(),
+        message: 'Detected by our own check of the login page. The supplier has not necessarily reported a problem.',
+        url: svc.url,
+      })),
+      upcoming: [],
+      url: svc.url,
+      updated: new Date().toISOString(),
+    };
+  }));
+}
+
 function unavailable(id, name, vendor, url, error) {
   return {
     id, name, vendor, url,
@@ -306,6 +377,7 @@ const SOURCES = [
   { fn: securly, fallback: SECURLY_PRODUCTS.map((p) => [p.id, p.name, 'Securly', SECURLY_PAGE]) },
   { fn: arbor, fallback: [['arbor-mis', 'Arbor MIS', 'Arbor Education', ARBOR_PAGE]] },
   { fn: trelson, fallback: [['trelson', 'Trelson Exams', 'Trelson', TRELSON_PAGE]] },
+  { fn: availability, fallback: CHECKED.map((s) => [s.id, s.name, s.vendor, s.url]) },
 ];
 
 async function collect() {
