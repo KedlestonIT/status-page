@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IT Service Status</title>
+<meta name="description" content="Live status of the IT services used across our schools.">
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --border: #e3e6eb;
+    --text: #1b1f24;
+    --muted: #5d6673;
+    --ok: #1f8a4c;      --ok-bg: #e7f5ec;
+    --maint: #3563c9;   --maint-bg: #e8eefb;
+    --warn: #b26a00;    --warn-bg: #fdf1dc;
+    --partial: #c2410c; --partial-bg: #fde8dc;
+    --bad: #c62828;     --bad-bg: #fbe5e5;
+    --unk: #6b7280;     --unk-bg: #eef0f3;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216;
+      --surface: #171b21;
+      --border: #2a3039;
+      --text: #e7eaee;
+      --muted: #9aa3ae;
+      --ok: #4ccb82;      --ok-bg: #12291c;
+      --maint: #7ea2f0;   --maint-bg: #18223a;
+      --warn: #f0b04a;    --warn-bg: #2e2412;
+      --partial: #f08a55; --partial-bg: #301c12;
+      --bad: #f06b6b;     --bad-bg: #331616;
+      --unk: #9aa3ae;     --unk-bg: #22272e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 48px; }
+  header h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  header p { margin: 0; color: var(--muted); }
+
+  .banner {
+    display: flex; align-items: center; gap: 14px;
+    margin: 24px 0; padding: 18px 20px;
+    border-radius: var(--radius);
+    font-weight: 600; font-size: 1.1rem;
+  }
+  .banner .dot { width: 14px; height: 14px; }
+
+  .meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+          color: var(--muted); font-size: .875rem; margin-bottom: 12px; }
+  button.link { background: none; border: 0; padding: 0; color: inherit; font: inherit;
+                text-decoration: underline; cursor: pointer; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
+  }
+  .card-head { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
+  .card-head .name { font-weight: 600; }
+  .card-head .sub { color: var(--muted); font-size: .8125rem; }
+  .card-head .grow { flex: 1; min-width: 0; }
+  .pill {
+    font-size: .8125rem; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: currentColor; }
+
+  .s-operational { color: var(--ok); }      .bg-operational { background: var(--ok-bg); color: var(--ok); }
+  .s-maintenance { color: var(--maint); }   .bg-maintenance { background: var(--maint-bg); color: var(--maint); }
+  .s-degraded { color: var(--warn); }       .bg-degraded { background: var(--warn-bg); color: var(--warn); }
+  .s-partial { color: var(--partial); }     .bg-partial { background: var(--partial-bg); color: var(--partial); }
+  .s-outage { color: var(--bad); }          .bg-outage { background: var(--bad-bg); color: var(--bad); }
+  .s-unknown { color: var(--unk); }         .bg-unknown { background: var(--unk-bg); color: var(--unk); }
+
+  .incident { border-top: 1px solid var(--border); padding: 14px 20px; }
+  .incident h3 { font-size: .95rem; margin: 0 0 4px; display: flex; gap: 8px; align-items: baseline; }
+  .incident .when { color: var(--muted); font-size: .8125rem; margin-bottom: 6px; }
+  .incident p { margin: 0; font-size: .9rem; white-space: pre-line; overflow-wrap: anywhere; }
+  .incident p.clamp { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .incident a { color: inherit; font-size: .8125rem; }
+  .tag { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+
+  details { border-top: 1px solid var(--border); }
+  summary { padding: 10px 20px; cursor: pointer; color: var(--muted); font-size: .875rem; }
+  ul.components { list-style: none; margin: 0; padding: 0 20px 12px; }
+  ul.components li { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: .9rem; }
+  ul.components li .grow { flex: 1; }
+  ul.components li .st { font-size: .8125rem; }
+
+  .err { color: var(--muted); font-size: .8125rem; padding: 0 20px 14px; }
+  footer { margin-top: 28px; color: var(--muted); font-size: .8125rem; }
+  footer a { color: inherit; }
+
+  @media (max-width: 520px) {
+    main { padding-top: 20px; }
+    .card-head { flex-wrap: wrap; padding: 14px 16px; }
+    .incident, summary { padding-left: 16px; padding-right: 16px; }
+    ul.components { padding: 0 16px 12px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>IT Service Status</h1>
+    <p>Live status of the systems used across our schools, taken from each supplier's own status page.</p>
+  </header>
+
+  <div id="banner" class="banner bg-unknown" role="status" aria-live="polite">
+    <span class="dot"></span><span id="banner-text">Checking services…</span>
+  </div>
+
+  <div class="meta">
+    <span id="updated">&nbsp;</span>
+    <span>Checked about every 5 minutes · <button class="link" id="refresh" type="button">Refresh now</button></span>
+  </div>
+
+  <section id="services" aria-label="Services"></section>
+
+  <footer>
+    Problem not shown here? Contact the IT team.
+    Microsoft 365 shows widespread incidents only; issues affecting a single school may not appear.
+  </footer>
+</main>
+
+<script>
+(() => {
+  const REFRESH_MS = 60 * 1000;
+  const STALE_MS = 30 * 60 * 1000; // the collector runs about every 5 minutes
+  const LABEL = {
+    operational: 'Operational', maintenance: 'Maintenance', degraded: 'Degraded performance',
+    partial: 'Partial outage', outage: 'Major outage', unknown: 'Status unavailable',
+  };
+  const BANNER = {
+    operational: 'All systems operational',
+    maintenance: 'Scheduled maintenance in progress',
+    degraded: 'Some services are having problems',
+    partial: 'Some services are partly unavailable',
+    outage: 'A major outage is affecting one or more services',
+    unknown: 'Unable to check some services right now',
+  };
+
+  const $ = (sel) => document.querySelector(sel);
+  const el = (tag, props = {}, ...children) => {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (k === 'class') n.className = v; else if (k in n) n[k] = v; else n.setAttribute(k, v);
+    }
+    for (const c of children.flat()) if (c != null) n.append(c);
+    return n;
+  };
+  const fmt = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  };
+
+  function incident(i) {
+    const msg = el('p', { class: i.message && i.message.length > 280 ? 'clamp' : '' }, i.message || '');
+    if (msg.className) msg.addEventListener('click', () => msg.classList.toggle('clamp'));
+    const when = [
+      i.started && `Started ${fmt(i.started)}`,
+      i.ends && `Until ${fmt(i.ends)}`,
+      i.updated && `Updated ${fmt(i.updated)}`,
+    ].filter(Boolean).join(' · ');
+    return el('div', { class: 'incident' },
+      el('h3', {},
+        el('span', { class: `tag s-${i.status}` }, i.kind === 'maintenance' ? 'Maintenance' : (LABEL[i.status] || 'Incident')),
+        el('span', {}, i.title || 'Incident')),
+      when ? el('div', { class: 'when' }, when) : null,
+      i.message ? msg : null,
+      i.url ? el('a', { href: i.url, target: '_blank', rel: 'noopener' }, 'Supplier update ↗') : null,
+    );
+  }
+
+  function card(s) {
+    const sub = [s.vendor, s.scope].filter(Boolean).join(' · ');
+    const node = el('article', { class: 'card' },
+      el('div', { class: 'card-head' },
+        el('span', { class: `dot s-${s.status}`, 'aria-hidden': 'true' }),
+        el('div', { class: 'grow' },
+          el('div', { class: 'name' }, s.name),
+          el('div', { class: 'sub' }, sub)),
+        el('span', { class: `pill bg-${s.status}` }, s.statusText || LABEL[s.status])),
+      (s.incidents || []).map(incident),
+      (s.upcoming || []).map((u) => incident({ ...u, kind: 'maintenance', title: `Planned: ${u.title}` })),
+      s.error ? el('div', { class: 'err' }, `Couldn't reach ${s.vendor}'s status page. `,
+        el('a', { href: s.url, target: '_blank', rel: 'noopener' }, 'Check it directly ↗')) : null,
+    );
+    if (s.components && s.components.length > 1) {
+      node.append(el('details', {},
+        el('summary', {}, `${s.components.length} components`),
+        el('ul', { class: 'components' }, s.components.map((c) =>
+          el('li', {},
+            el('span', { class: `dot s-${c.status}`, 'aria-hidden': 'true' }),
+            el('span', { class: 'grow' }, c.name),
+            el('span', { class: `st s-${c.status}` }, c.statusText || LABEL[c.status]))))));
+    }
+    return node;
+  }
+
+  function render(data) {
+    $('#banner').className = `banner bg-${data.overall}`;
+    $('#banner-text').textContent = BANNER[data.overall] || BANNER.unknown;
+    $('#updated').textContent = `Last checked ${fmt(data.generatedAt)}`;
+    // Keep any expanded component lists open across refreshes.
+    const open = new Set([...document.querySelectorAll('details[open]')].map((d) => d.closest('article').dataset.id));
+    const list = data.services.map((s) => {
+      const c = card(s);
+      c.dataset.id = s.id;
+      if (open.has(s.id)) c.querySelector('details')?.setAttribute('open', '');
+      return c;
+    });
+    $('#services').replaceChildren(...list);
+  }
+
+  let timer;
+  async function load() {
+    clearTimeout(timer);
+    try {
+      // Relative URL so it works at github.io/<repo>/ and on a custom domain.
+      const res = await fetch(`status.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(res.status);
+      const data = await res.json();
+      render(data);
+      if (Date.now() - new Date(data.generatedAt) > STALE_MS) {
+        $('#updated').textContent += ' · not updated recently, figures may be out of date';
+      }
+    } catch {
+      $('#banner').className = 'banner bg-unknown';
+      $('#banner-text').textContent = 'Status could not be loaded. Retrying shortly…';
+    } finally {
+      timer = setTimeout(load, REFRESH_MS);
+    }
+  }
+  $('#refresh').addEventListener('click', load);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+  load();
+})();
+</script>
+</body>
+</html>

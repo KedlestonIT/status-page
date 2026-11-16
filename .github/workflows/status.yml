@@ -1,0 +1,57 @@
+name: Update status page
+
+on:
+  schedule:
+    # Every 5 minutes (GitHub's minimum). Runs can start a few minutes late when GitHub is busy.
+    - cron: '*/5 * * * *'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: write   # only used by the keep-alive step below
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Collect supplier status
+        run: |
+          mkdir -p site
+          cp src/index.html site/
+          node collector/collect.js site/status.json
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+      # GitHub switches off scheduled workflows in repos with no activity for 60 days.
+      # Re-enabling this workflow during the midnight hour (UTC) each day keeps the schedule running.
+      - name: Keep schedule alive
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$(date -u +%H)" = "00" ]; then
+            gh workflow enable status.yml --repo "$GITHUB_REPOSITORY"
+          fi
