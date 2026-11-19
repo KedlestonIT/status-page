@@ -82,7 +82,7 @@ New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $sp.Id -PrincipalId 
 New-MgApplicationFederatedIdentityCredential -ApplicationId $app.Id -BodyParameter @{
   Name      = 'github-status-page'
   Issuer    = 'https://token.actions.githubusercontent.com'
-  Subject   = 'repo:KedlestonIT/status-page:environment:github-pages'
+  Subject   = 'repo:KedlestonIT@357398062/status-page@1464085338:environment:github-pages'
   Audiences = @('api://AzureADTokenExchange')
 }
 
@@ -96,15 +96,26 @@ Or in the Entra admin centre:
    directory only*, no redirect URI.
 2. **API permissions → Add a permission → Microsoft Graph → Application permissions → ServiceHealth.Read.All → Add
    permissions**, then **Grant admin consent for Kedleston Group**. Remove the default delegated `User.Read`; it isn't needed.
-3. **Certificates & secrets → Federated credentials → Add credential → GitHub Actions deploying Azure resources**:
-   Organization `KedlestonIT`, Repository `status-page`, Entity type **Environment**, Environment `github-pages`,
-   Name `github-status-page`. The subject must read exactly `repo:KedlestonIT/status-page:environment:github-pages`
-   (case-sensitive).
+3. **Certificates & secrets → Federated credentials → Add credential → Other issuer**:
+   Issuer `https://token.actions.githubusercontent.com`, Type **Explicit subject identifier**,
+   Value `repo:KedlestonIT@357398062/status-page@1464085338:environment:github-pages`,
+   Audience `api://AzureADTokenExchange`, Name `github-status-page`. The value is case-sensitive.
 4. Copy the **Directory (tenant) ID** and **Application (client) ID** from the Overview page.
 
 Why *environment* and not *branch*: the deploy job runs in the `github-pages` environment, and GitHub then puts the
 environment, not the branch, in the token's subject. That environment only accepts deployments from `main` by default,
 so the effect is the same: only runs from `main` can sign in.
+
+Why the numbers in the subject: this repo uses GitHub's **immutable subject** format, which adds the account ID
+(`357398062`) and repo ID (`1464085338`). If the repo is ever deleted and recreated, or the name is taken by someone
+else, the IDs change and the old credential stops working, which is the point. The portal's *GitHub Actions* scenario
+builds the old name-only subject, so use *Other issuer* as above. To check the current prefix:
+
+```powershell
+gh api repos/KedlestonIT/status-page/actions/oidc/customization/sub --jq .sub_claim_prefix
+```
+
+If sign-in fails with AADSTS700213, the workflow warning shows the exact subject GitHub sent; make the credential match it.
 
 ### 2. Repo variables
 
