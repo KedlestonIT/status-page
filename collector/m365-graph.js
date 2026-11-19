@@ -119,8 +119,9 @@ const max = (a, b) => (RANK[b] > RANK[a] ? b : a);
 const TEXT = { operational: 'Healthy', degraded: 'Advisory', partial: 'Incident', outage: 'Service interruption' };
 
 function overviewLevel(status) {
+  // Microsoft uses serviceDegradation for advisories too, so only an issue classed
+  // as an incident (see issueLevel) turns a service orange.
   if (status === 'serviceInterruption') return 'outage';
-  if (status === 'serviceDegradation') return 'partial';
   return HEALTHY.has(status) ? 'operational' : 'degraded';
 }
 
