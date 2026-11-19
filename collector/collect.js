@@ -83,10 +83,14 @@ async function securly() {
     const affects = (i) => (i.components_affected || []).some((c) => c._id === comp.id);
     const toIncident = (i, kind) => {
       const last = (i.messages || []).at(-1) || {};
+      // Status.io messages carry `status` (the severity code, as above) and `state`
+      // (100 investigating, 200 identified, 300 monitoring). Severity comes from `status`.
+      const level = securlyLevel(last.status ?? 300);
       return {
         kind,
         title: i.name,
-        status: kind === 'maintenance' ? 'maintenance' : securlyLevel(last.state ?? 300),
+        status: kind === 'maintenance' ? 'maintenance' : level,
+        statusText: kind === 'incident' && level === 'operational' ? (last.state === 300 ? 'Monitoring' : 'Resolved') : undefined,
         started: i.datetime_open || i.datetime_planned_start,
         ends: i.datetime_planned_end,
         updated: last.datetime || i.datetime_open,
@@ -101,10 +105,9 @@ async function securly() {
     ];
     const planned = upcoming.filter(affects).map((i) => toIncident(i, 'maintenance'));
 
-    // Status.io leaves component codes at 100 for "informational" incidents,
-    // so an active incident lifts the card to at least "degraded".
-    let status = securlyLevel(primary.status_code);
-    if (active.some((a) => a.kind === 'incident')) status = worst([status, 'degraded']);
+    // An open incident lifts the card to its own severity, so one Securly has marked
+    // "Operational" (e.g. while monitoring) leaves the card green.
+    const status = worst([securlyLevel(primary.status_code), ...active.filter((a) => a.kind === 'incident').map((a) => a.status)]);
 
     return {
       id: p.id,
