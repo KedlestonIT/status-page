@@ -169,7 +169,7 @@ function normalise({ overviews, issues }, detail = env('M365_DETAIL') || 'servic
         status: c.status,
         statusText: TEXT[c.status],
         updated: c._issues.map((i) => i.lastModifiedDateTime).sort().at(-1) || null,
-        message: `Microsoft is reporting ${c._counts || 'a problem'} affecting ${c.name}. Contact IT if this is stopping you working.`,
+        message: `Microsoft is reporting ${c._counts || 'a problem'} affecting ${c.name}.`,
         url: null,
       }));
 
