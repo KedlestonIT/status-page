@@ -1,0 +1,43 @@
+{
+  "_note": "Made-up sample in the shape Microsoft Graph returns. Used only when M365_SAMPLE=1.",
+  "overviews": [
+    { "id": "Exchange", "service": "Exchange Online", "status": "serviceDegradation" },
+    { "id": "microsoftteams", "service": "Microsoft Teams", "status": "investigating" },
+    { "id": "SharePoint", "service": "SharePoint Online", "status": "serviceOperational" },
+    { "id": "OneDriveForBusiness", "service": "OneDrive for Business", "status": "serviceOperational" },
+    { "id": "OSDPPlatform", "service": "Microsoft 365 suite", "status": "serviceOperational" },
+    { "id": "O365Client", "service": "Microsoft 365 Apps", "status": "serviceOperational" },
+    { "id": "OfficeOnline", "service": "Office for the web", "status": "serviceOperational" },
+    { "id": "Intune", "service": "Microsoft Intune", "status": "serviceRestored" },
+    { "id": "MicrosoftEntra", "service": "Microsoft Entra", "status": "serviceOperational" },
+    { "id": "Forms", "service": "Microsoft Forms", "status": "serviceOperational" },
+    { "id": "Planner", "service": "Planner", "status": "serviceOperational" },
+    { "id": "PowerBIcom", "service": "Power BI", "status": "serviceOperational" },
+    { "id": "Bookings", "service": "Microsoft Bookings", "status": "serviceOperational" },
+    { "id": "Stream", "service": "Microsoft Stream", "status": "serviceOperational" },
+    { "id": "MicrosoftDefenderForOffice365", "service": "Microsoft Defender for Office 365", "status": "serviceOperational" }
+  ],
+  "issues": [
+    {
+      "id": "EX912345", "service": "Exchange Online", "feature": "E-Mail and calendar access",
+      "classification": "incident", "status": "serviceDegradation", "isResolved": false,
+      "title": "Some users may experience delays when sending or receiving email",
+      "impactDescription": "Users may notice delays of up to 30 minutes when sending or receiving email messages.",
+      "startDateTime": "2026-11-19T08:40:00Z", "lastModifiedDateTime": "2026-11-19T11:05:00Z"
+    },
+    {
+      "id": "TM887766", "service": "Microsoft Teams", "feature": "Teams Components",
+      "classification": "advisory", "status": "investigating", "isResolved": false,
+      "title": "Users may be unable to view recent chat messages in the Teams desktop client",
+      "impactDescription": "Users may find that recent chat messages are not visible until they restart the client. The web client is unaffected.",
+      "startDateTime": "2026-11-19T09:55:00Z", "lastModifiedDateTime": "2026-11-19T10:48:00Z"
+    },
+    {
+      "id": "IT776655", "service": "Microsoft Intune", "feature": "Device enrolment",
+      "classification": "advisory", "status": "serviceRestored", "isResolved": true,
+      "title": "Delays enrolling new Windows devices",
+      "impactDescription": "Resolved: devices may have taken longer than usual to enrol.",
+      "startDateTime": "2026-11-18T13:00:00Z", "lastModifiedDateTime": "2026-11-18T17:30:00Z"
+    }
+  ]
+}

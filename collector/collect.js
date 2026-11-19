@@ -187,7 +187,28 @@ async function arbor() {
   }];
 }
 
-// ---------- Microsoft 365 (public status feed) ----------
+// ---------- Microsoft 365 ----------
+// With an Entra app registration configured (see README) we read our own tenant's service health
+// from Microsoft Graph. Without it, or if Graph fails, we fall back to Microsoft's public feed.
+const { m365Graph, isConfigured: graphConfigured } = require('./m365-graph');
+
+async function m365() {
+  if (!graphConfigured()) return m365Public();
+  try {
+    return await m365Graph();
+  } catch (err) {
+    // Full reason goes to the workflow log only: Entra errors can include tenant and app IDs.
+    console.warn(`::warning::Microsoft Graph service health failed: ${err.message}`);
+    const [card] = await m365Public();
+    return [{
+      ...card,
+      error: 'Tenant service health unavailable',
+      notice: "Our own Microsoft 365 health check isn't working right now, so this shows Microsoft's public status instead. ",
+    }];
+  }
+}
+
+// Public status feed (widespread incidents only)
 function m365Level(text = '') {
   const t = text.toLowerCase();
   if (!t || t === 'available' || t.includes('restored') || t.includes('resolved')) return 'operational';
@@ -196,7 +217,7 @@ function m365Level(text = '') {
   return 'degraded'; // degradation, investigating, extended recovery, etc.
 }
 
-async function m365() {
+async function m365Public() {
   const xml = await get(M365_FEED);
   const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => {
     const tag = (n) => decode((m[1].match(new RegExp(`<${n}[^>]*>([\\s\\S]*?)</${n}>`)) || [])[1] || '');
@@ -411,5 +432,7 @@ if (require.main === module) {
     const failed = r.services.filter((s) => s.error);
     console.log(`Wrote ${out}: overall ${r.overall}, ${r.services.length} services`);
     for (const s of failed) console.warn(`::warning::${s.name}: ${s.error}`);
+    const ms = r.services.find((s) => s.id === 'm365');
+    if (ms) console.log(`Microsoft 365 source: ${ms.componentLabel ? 'tenant service health (Graph)' : 'public feed'}`);
   });
 }

@@ -33,6 +33,15 @@ jobs:
           node-version: 20
 
       - name: Collect supplier status
+        env:
+          # Microsoft 365 tenant service health (see README). Leave unset to use Microsoft's public feed.
+          # Sign-in uses this job's GitHub OIDC token (federated credential), so no secret is needed.
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          # Fallback only, if federation can't be used. Normally left unset.
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          # 'services' (default): colours per service only. 'full': issue titles and details too.
+          M365_DETAIL: ${{ vars.M365_DETAIL }}
         run: |
           mkdir -p site
           cp src/index.html site/

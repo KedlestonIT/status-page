@@ -127,7 +127,6 @@
 
   <footer>
     Problem not shown here? Contact the IT team.
-    Microsoft 365 shows widespread incidents only; issues affecting a single school may not appear.
   </footer>
 </main>
 
@@ -168,18 +167,24 @@
     const msg = el('p', { class: i.message && i.message.length > 280 ? 'clamp' : '' }, i.message || '');
     if (msg.className) msg.addEventListener('click', () => msg.classList.toggle('clamp'));
     const when = [
+      i.ref,
       i.started && `Started ${fmt(i.started)}`,
       i.ends && `Until ${fmt(i.ends)}`,
       i.updated && `Updated ${fmt(i.updated)}`,
     ].filter(Boolean).join(' · ');
     return el('div', { class: 'incident' },
       el('h3', {},
-        el('span', { class: `tag s-${i.status}` }, i.kind === 'maintenance' ? 'Maintenance' : (LABEL[i.status] || 'Incident')),
+        el('span', { class: `tag s-${i.status}` }, i.kind === 'maintenance' ? 'Maintenance' : (i.statusText || LABEL[i.status] || 'Incident')),
         el('span', {}, i.title || 'Incident')),
       when ? el('div', { class: 'when' }, when) : null,
       i.message ? msg : null,
       i.url ? el('a', { href: i.url, target: '_blank', rel: 'noopener' }, 'Supplier update ↗') : null,
     );
+  }
+
+  function summary(s) {
+    const bad = s.components.filter((c) => c.status !== 'operational').length;
+    return `${s.components.length} ${s.componentLabel || 'components'}${bad ? ` · ${bad} with issues` : ' · all healthy'}`;
   }
 
   function card(s) {
@@ -193,12 +198,12 @@
         el('span', { class: `pill bg-${s.status}` }, s.statusText || LABEL[s.status])),
       (s.incidents || []).map(incident),
       (s.upcoming || []).map((u) => incident({ ...u, kind: 'maintenance', title: `Planned: ${u.title}` })),
-      s.error ? el('div', { class: 'err' }, `Couldn't reach ${s.vendor}'s status page. `,
+      s.error ? el('div', { class: 'err' }, s.notice || `Couldn't reach ${s.vendor}'s status page. `,
         el('a', { href: s.url, target: '_blank', rel: 'noopener' }, 'Check it directly ↗')) : null,
     );
     if (s.components && s.components.length > 1) {
       node.append(el('details', {},
-        el('summary', {}, `${s.components.length} components`),
+        el('summary', {}, summary(s)),
         el('ul', { class: 'components' }, s.components.map((c) =>
           el('li', {},
             el('span', { class: `dot s-${c.status}`, 'aria-hidden': 'true' }),
