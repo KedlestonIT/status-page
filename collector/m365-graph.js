@@ -79,9 +79,15 @@ async function fetchGraph() {
     return JSON.parse(fs.readFileSync(path.join(__dirname, 'samples', 'm365-graph.json'), 'utf8'));
   }
   const token = await graphToken();
+  const select = '$select=id,title,impactDescription,classification,status,service,feature,isResolved,startDateTime,lastModifiedDateTime';
+  // Ask Graph for open issues only. ($top stops Graph returning a next page, so it isn't used.)
+  // If the filter is ever rejected, fall back to paging through everything.
+  const openIssues = () =>
+    graphAll(`${GRAPH}/issues?$filter=isResolved eq false&${select}`, token)
+      .catch(() => graphAll(`${GRAPH}/issues?${select}`, token, 50));
   const [overviews, issues] = await Promise.all([
     graphAll(`${GRAPH}/healthOverviews?$select=id,service,status`, token),
-    graphAll(`${GRAPH}/issues?$top=100&$select=id,title,impactDescription,classification,status,service,feature,isResolved,startDateTime,lastModifiedDateTime`, token),
+    openIssues(),
   ]);
   // Diagnostics for the workflow log (public on a public repo): counts and status codes only, no issue text.
   const unresolved = issues.filter((i) => !i.isResolved);
