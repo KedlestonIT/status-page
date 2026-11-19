@@ -83,6 +83,21 @@ async function fetchGraph() {
     graphAll(`${GRAPH}/healthOverviews?$select=id,service,status`, token),
     graphAll(`${GRAPH}/issues?$top=100&$select=id,title,impactDescription,classification,status,service,feature,isResolved,startDateTime,lastModifiedDateTime`, token),
   ]);
+  // Diagnostics for the workflow log (public on a public repo): counts and status codes only, no issue text.
+  const unresolved = issues.filter((i) => !i.isResolved);
+  console.log(`Graph: ${overviews.length} services, ${issues.length} issues (${unresolved.length} unresolved)`);
+  for (const o of overviews.filter((o) => !HEALTHY.has(o.status))) {
+    const mine = issues.filter((i) => i.service === o.service);
+    const tally = {};
+    for (const i of mine) {
+      const k = `${i.classification}/${i.status}/${i.isResolved ? 'resolved' : 'open'}`;
+      tally[k] = (tally[k] || 0) + 1;
+    }
+    console.log(`  ${o.service} [${o.id}] overview=${o.status} issues=${JSON.stringify(tally)}`);
+  }
+  const names = new Set(overviews.map((o) => o.service));
+  const orphan = [...new Set(unresolved.map((i) => i.service).filter((s) => !names.has(s)))];
+  if (orphan.length) console.log(`  unresolved issues on services not in overviews: ${orphan.join(', ')}`);
   return { overviews, issues };
 }
 
